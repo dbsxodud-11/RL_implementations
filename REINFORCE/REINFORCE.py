@@ -75,7 +75,6 @@ class REINFORCE(nn.Module):
         self.optimizer.step()
 
         self.log_probs = []
-        self.returns = []
 
 
 if __name__ == '__main__':
