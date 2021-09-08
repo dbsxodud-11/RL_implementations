@@ -12,7 +12,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.distributions import Categorical
 
 def update_model(source, target, tau) :
     for source_param, target_param in zip(source.parameters(), target.parameters()) :
