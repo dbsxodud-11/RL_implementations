@@ -1,6 +1,7 @@
 # Implementation of DQN Algorithm
 import os
 import random
+import datetime
 
 import numpy as np
 from tqdm import tqdm
@@ -12,6 +13,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
+from torch.utils.tensorboard import SummaryWriter
 
 def update_model(source, target, tau) :
     for source_param, target_param in zip(source.parameters(), target.parameters()) :
@@ -65,7 +67,7 @@ class ReplayMemory:
 
 
 class DQN(nn.Module):
-    def __init__(self, state_dim, action_dim, lr=1e-3, gamma=0.99, batch_size=120, eps=0.9, eps_decay=1e-3, eps_threshold=0.1, tau=0.01):
+    def __init__(self, state_dim, action_dim, lr=1e-3, gamma=0.99, batch_size=120, eps=0.9, eps_decay=0.999, eps_threshold=0.1, tau=0.01):
         super(DQN, self).__init__()
 
         self.state_dim = state_dim
@@ -89,18 +91,16 @@ class DQN(nn.Module):
 
         self.memory = ReplayMemory(capacity=5000)
 
+        log_dir = './runs/DQN_CartPole_v0_' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.writer = SummaryWriter(log_dir=log_dir)
+        self.writer_step = 0
+
     def select_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0)
         if random.random() < self.eps:
             action = np.random.randint(self.action_dim)
         else:
             action = torch.argmax(self.main_network(state)).item()
-        
-        if self.eps > self.eps_threshold:
-            self.eps *= self.eps_decay
-        else:
-            self.eps = self.eps_threshold
-        
         return action
 
     def push(self, transition):
@@ -122,6 +122,11 @@ class DQN(nn.Module):
 
         if self.step % self.update_step:
             self.update_target()
+
+        if self.eps > self.eps_threshold:
+            self.eps *= self.eps_decay
+        else:
+            self.eps = self.eps_threshold
         self.step += 1
 
         return mse_loss.item()
@@ -129,6 +134,11 @@ class DQN(nn.Module):
     def update_target(self):
         update_model(self.main_network, self.target_network, tau=self.tau)
 
+    def write(self, reward, loss):
+        self.writer.add_scalar('Loss/value_loss', loss, self.writer_step)
+        self.writer.add_scalar('Reward', reward, self.writer_step)
+        self.writer.add_scalar('Epsilon', self.eps, self.step)
+        self.writer_step += 1
     
 if __name__ == "__main__":
         
@@ -136,13 +146,11 @@ if __name__ == "__main__":
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
 
-    num_episodes = 300
-    episode_rewards = []
-    episode_losses = []
+    num_episodes = 500
 
     agent = DQN(state_dim, action_dim)
 
-    for episode in range(num_episodes):
+    for episode in tqdm(range(num_episodes)):
         episode_reward = 0
         episode_loss = []
         state = env.reset()
@@ -160,28 +168,9 @@ if __name__ == "__main__":
                 episode_loss.append(loss)
 
             if done:
-                print(f"Episode {episode+1}: finished after {t+1} timesteps")
-                episode_rewards.append(episode_reward)
-                episode_losses.append(np.mean(episode_loss))
+                if agent.train_start():
+                    agent.write(episode_reward, np.mean(episode_loss))
                 break
-        
-    episode_reward_moving_average = [sum(episode_rewards[max(0, t-10): min(t+10, len(episode_rewards))]) / (min(t+10, len(episode_rewards)) - max(0, t-10) + 1) for t in range(len(episode_rewards))]
-    plt.style.use('ggplot')
-    plt.plot(episode_rewards, linewidth=2.0, color='lightcoral', label='DQN')
-    plt.plot(episode_reward_moving_average, linewidth=3.0, color='crimson')
-    plt.title('Reward Curve - DQN')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-
-    episode_loss_moving_average = [sum(episode_losses[max(0, t-10): min(t+10, len(episode_losses))]) / (min(t+10, len(episode_losses)) - max(0, t-10) + 1) for t in range(len(episode_losses))]
-    plt.style.use('ggplot')
-    plt.plot(episode_losses, linewidth=2.0, color='deepskyblue', label='DQN')
-    plt.plot(episode_loss_moving_average, linewidth=3.0, color='navy')
-    plt.title('Loss Curve - DQN')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
 
 
 
