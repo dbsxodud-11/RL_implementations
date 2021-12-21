@@ -67,7 +67,7 @@ class ReplayMemory:
 
 
 class DQN(nn.Module):
-    def __init__(self, state_dim, action_dim, lr=1e-3, gamma=0.99, batch_size=120, eps=0.9, eps_decay=0.999, eps_threshold=0.1, tau=0.01):
+    def __init__(self, state_dim, action_dim, lr=1e-3, gamma=0.99, batch_size=120, eps=0.9, eps_decay=0.999, eps_threshold=0.1, tau=0.001):
         super(DQN, self).__init__()
 
         self.state_dim = state_dim
@@ -120,24 +120,20 @@ class DQN(nn.Module):
         mse_loss.backward()
         self.optimizer.step()
 
-        if self.step % self.update_step:
-            self.update_target()
-
-        if self.eps > self.eps_threshold:
-            self.eps *= self.eps_decay
-        else:
-            self.eps = self.eps_threshold
         self.step += 1
+        if self.step % self.update_step:
+            update_model(self.main_network, self.target_network, tau=self.tau)
+            if self.eps > self.eps_threshold:
+                self.eps *= self.eps_decay
+            else:
+                self.eps = self.eps_threshold
 
         return mse_loss.item()
-
-    def update_target(self):
-        update_model(self.main_network, self.target_network, tau=self.tau)
 
     def write(self, reward, loss):
         self.writer.add_scalar('Loss/value_loss', loss, self.writer_step)
         self.writer.add_scalar('Reward', reward, self.writer_step)
-        self.writer.add_scalar('Epsilon', self.eps, self.step)
+        self.writer.add_scalar('Epsilon', self.eps, self.writer_step)
         self.writer_step += 1
     
 if __name__ == "__main__":
@@ -146,7 +142,7 @@ if __name__ == "__main__":
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
 
-    num_episodes = 500
+    num_episodes = 300
 
     agent = DQN(state_dim, action_dim)
 
@@ -154,7 +150,8 @@ if __name__ == "__main__":
         episode_reward = 0
         episode_loss = []
         state = env.reset()
-        for t in range(1000):
+        done = False
+        while not done:
             action = agent.select_action(state)
             next_state, reward, done, _ = env.step(action)
 
