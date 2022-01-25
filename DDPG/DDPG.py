@@ -154,7 +154,7 @@ class DDPG(nn.Module):
 
 if __name__ == "__main__":
 
-    env = gym.make('Pendulum-v0') # Continous control task
+    env = gym.make('Pendulum-v1') # Continous control task
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
