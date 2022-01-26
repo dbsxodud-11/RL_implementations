@@ -84,9 +84,11 @@ class PER:
         for i in range(n):
             a = segment * i
             b = segment * (i + 1)
-
-            s = random.uniform(a, b)
-            (idx, p, data) = self.tree.get(s)
+            while True:
+                s = random.uniform(a, b)
+                (idx, p, data) = self.tree.get(s)
+                if not isinstance(data, int):
+                    break
             priorities.append(p)
             batch.append(data)
             idxs.append(idx)

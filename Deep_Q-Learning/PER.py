@@ -58,8 +58,7 @@ class PERAgent(nn.Module):
         next_action = torch.max(self.main_network(next_state), dim=1)[1].reshape(-1, 1)
         target_q_value = reward + self.gamma * self.target_network(next_state).gather(1, next_action) * (1 - done)
 
-        td_error = self.main_network(state).gather(1, action) - target_q_value
-        td_error = np.abs(td_error.detach().numpy())
+        td_error = torch.abs(self.main_network(state).gather(1, action) - target_q_value).detach().numpy()
 
         self.memory.push(transition, td_error)
 
