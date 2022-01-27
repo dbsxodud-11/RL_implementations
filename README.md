@@ -14,6 +14,12 @@ conda create -f environment.yml
 
 # Deep Q-Learning
 
+- Command
+```
+cd Deep_Q-Learning
+python main.py --agent=[AGENT_NAME]
+```
+
 1. Playing Atari with Deep Reinforcement Learning([논문 링크](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf))
 
     - First attempt to combine Deep Neural Network with Reinforcement Learning
