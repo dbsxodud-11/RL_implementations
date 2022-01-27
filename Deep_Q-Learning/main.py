@@ -6,7 +6,9 @@ from tqdm import tqdm
 
 from DQN import DQNAgent
 from Double_DQN import DoubleDQNAgent
+from Dueling_DQN import DuelingDQNAgent
 from PER import PERAgent
+
 
 parser = argparse.ArgumentParser(description='Train Deep Q-Learning Agent in Cartpole Environment')
 parser.add_argument('--agent', required=True, default='DQN', help='Choose your RL Agent')
@@ -22,7 +24,9 @@ if args.agent == "DQN":
     agent = DQNAgent(state_dim, action_dim)
 elif args.agent == "Double DQN":
     agent = DoubleDQNAgent(state_dim, action_dim)
-elif args.agent == 'PER':
+elif args.agent == "Dueling DQN":
+    agent = DuelingDQNAgent(state_dim, action_dim)
+elif args.agent == "PER":
     agent = PERAgent(state_dim, action_dim)
 
 for episode in tqdm(range(num_episodes)):

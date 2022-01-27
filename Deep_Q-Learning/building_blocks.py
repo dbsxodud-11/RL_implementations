@@ -3,6 +3,7 @@ import random
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from collections import deque
 
 from misc import SumTree
@@ -24,6 +25,28 @@ class MLP(nn.Module):
         for layer in self.layers:
             x = layer(x)
         return x
+    
+    
+class DuelingNet(nn.Module):
+    def __init__(self, state_dim, action_dim, hidden=[64 for _ in range(2)]):
+        super(DuelingNet, self).__init__()
+        
+        self.layers = nn.Sequential(nn.Linear(state_dim, 64),
+                                    nn.ReLU(),
+                                    nn.Linear(64, 64),
+                                    nn.ReLU()
+                                   )
+        
+        self.val_head = nn.Linear(64, 1)
+        self.adv_head = nn.Linear(64, action_dim)
+        
+    def forward(self, x):
+        x = self.layers(x)
+        
+        val = self.val_head(x)
+        adv = self.adv_head(x)
+        adv = adv - torch.mean(adv, dim=1, keepdim=True)
+        return val + adv
 
 
 class ReplayMemory:
