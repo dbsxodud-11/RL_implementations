@@ -11,40 +11,17 @@ wandb.init('Cartpole')
 
 from misc import update_model
 from building_blocks import MLP, PER
+from DQN import DQNAgent
 
-class PERAgent(nn.Module):
+class PERAgent(DQNAgent):
     def __init__(self, state_dim, action_dim, lr=1e-3, gamma=0.99, batch_size=120, eps=0.99, eps_decay=0.999, eps_threshold=0.01, tau=0.001):
-        super(PERAgent, self).__init__()
-
-        self.state_dim = state_dim
-        self.action_dim = action_dim
-        self.lr = lr
-        self.gamma = gamma
-        self.batch_size = batch_size
-        self.eps = eps
-        self.eps_decay = eps_decay
-        self.eps_threshold = eps_threshold
+        super(PERAgent, self).__init__(state_dim, action_dim, lr, gamma, batch_size, eps, eps_decay, eps_threshold)
+        
         self.tau = tau
 
-        self.main_network = MLP(self.state_dim, self.action_dim)
-        self.target_network = MLP(self.state_dim, self.action_dim)
-        update_model(self.main_network, self.target_network, tau=1.0)
-
-        self.step = 0
-        self.update_step = 1000
-
         self.criterion = nn.MSELoss(reduction='none')
-        self.optimizer = optim.Adam(self.main_network.parameters(), lr=self.lr)
 
         self.memory = PER(capacity=5000)
-
-    def select_action(self, state):
-        state = torch.from_numpy(state).float().unsqueeze(0)
-        if random.random() < self.eps:
-            action = np.random.randint(self.action_dim)
-        else:
-            action = torch.argmax(self.main_network(state)).item()
-        return action
 
     def push(self, transition):
         state, action, next_state, reward, done = transition
@@ -61,9 +38,6 @@ class PERAgent(nn.Module):
         td_error = torch.abs(self.main_network(state).gather(1, action) - target_q_value).detach().numpy()
 
         self.memory.push(transition, td_error)
-
-    def train_start(self):
-        return len(self.memory) >= self.batch_size
 
     def train(self):
         batch, idxs, is_weight = self.memory.sample(self.batch_size)
@@ -97,8 +71,3 @@ class PERAgent(nn.Module):
                 self.eps = self.eps_threshold
 
         return weighted_loss.item()
-
-    def write(self, reward, loss):
-        wandb.log({"Reward": reward, 
-                   "Loss": loss,
-                   "Epsilon": self.eps})
