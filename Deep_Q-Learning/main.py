@@ -12,11 +12,13 @@ from PER import PERAgent
 
 parser = argparse.ArgumentParser(description='Train Deep Q-Learning Agent in Cartpole Environment')
 parser.add_argument('--agent', required=True, default='DQN', help='Choose your RL Agent')
+parser.add_argument('--env', required=True, default="Cartpole", help="Choose Environment", choices=["Cartpole"])
 args = parser.parse_args()
 
-env = gym.make('CartPole-v0')
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.n
+if args.env == "Cartpole":
+    env = gym.make('CartPole-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
 
 num_episodes = 500
 

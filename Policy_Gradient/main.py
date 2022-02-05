@@ -8,16 +8,27 @@ from REINFORCE import REINFORCE
 
 parser = argparse.ArgumentParser(description='Train Policy Gradient Agent in Cartpole Environment')
 parser.add_argument('--agent', required=True, default='REINFORCE', help='Choose your RL Agent')
+parser.add_argument('--env', required=True, default="Cartpole", help="Choose Environment", choices=["Cartpole", "Pendulum"])
 args = parser.parse_args()
 
-env = gym.make('CartPole-v0')
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.n
+continous = False
+if args.env == "Cartpole":
+    env = gym.make('CartPole-v0')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
+elif args.env == "Pendulum":
+    env = gym.make('Pendulum-v0')
+    continous = True
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+    
+action_min = env.action_space.low
+action_max = env.action_space.high
 
 num_episodes = 1000
 
 if args.agent == "REINFORCE":
-    agent = REINFORCE(state_dim, action_dim)
+    agent = REINFORCE(state_dim, action_dim, continous, action_min, action_max)
 
 for episode in tqdm(range(num_episodes)):
     episode_reward = 0
