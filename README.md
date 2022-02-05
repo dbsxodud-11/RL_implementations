@@ -17,7 +17,7 @@ conda create -f environment.yml
 - Command
 ```
 cd Deep_Q-Learning
-python main.py --agent=[AGENT_NAME]
+python main.py --agent=[AGENT_NAME] --env=[ENV_NAME]
 ```
 
 - Available Agents
@@ -41,3 +41,34 @@ python main.py --agent=[AGENT_NAME]
     4. Dueling DQN: Dueling Network Architecture for Deep Reinforcement Learning([논문 링크](https://arxiv.org/abs/1511.06581))
 
         - Using Dueling Network to estimate state-value function and action advantage function seperately. It is useful in states where actions do not affect the environment in any relevant way
+
+- Available Environments
+
+    1. Cartpole
+
+        - Discrete Action Space
+
+
+# Policy Gradient
+
+- Command
+```
+cd Policy_Gradient
+python main.py --agent=[AGENT_NAME] --env=[ENV_NAME]
+```
+
+- Available Agents
+
+    1. REINFORCE(Monte-Carlo Policy Gradient)
+
+        - Estimate Policy Gradient by using Monte-Carlo Methods
+        
+- Available Environments
+
+    1. Cartpole
+
+        - Discrete Action Space  
+
+    2. Pendulum
+
+        - Continuous Action Space
