@@ -10,11 +10,11 @@ import wandb
 wandb.init('Pendulum')
 
 from misc import update_model
-from building_blocks import MLP_Continuous, MLP_Discrete
+from building_blocks import MLP, MLP_Continuous, MLP_Discrete
 
 
 class REINFORCE(nn.Module):
-    def __init__(self, state_dim, action_dim, continuous=False, action_min=None, action_max=None, lr=1e-3, gamma=0.99):
+    def __init__(self, state_dim, action_dim, continuous=False, action_min=None, action_max=None, baseline=False, lr=1e-3, gamma=0.99):
         super(REINFORCE, self).__init__()
         
         self.state_dim = state_dim
@@ -22,6 +22,7 @@ class REINFORCE(nn.Module):
         self.continous = continuous
         self.action_min = action_min
         self.action_max = action_max
+        self.baseline = baseline
 
         self.lr = lr
         self.gamma = gamma
@@ -31,6 +32,11 @@ class REINFORCE(nn.Module):
         else:
             self.main_network = MLP_Discrete(state_dim, action_dim)
         self.optimizer = optim.Adam(self.main_network.parameters(), lr=self.lr)
+
+        if baseline:
+            self.value_network = MLP(state_dim, 1)
+            self.value_loss_criterion = nn.MSELoss()
+            self.value_optimizer = optim.Adam(self.value_network.parameters(), lr=self.lr)
         
     def select_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0)
@@ -47,8 +53,9 @@ class REINFORCE(nn.Module):
     def train(self, states, actions, rewards):
         states = np.stack(states)
         states = torch.FloatTensor(states)
+        actions = np.array(actions)
         actions = torch.FloatTensor(actions)
-        returns = [np.sum(rewards[i:] * (self.gamma ** np.array(range(i, len(rewards))))) for i in range(len(rewards))]
+        returns = [np.sum(rewards[i:] * (self.gamma ** np.arange(len(rewards) - i))) for i in range(len(rewards))]
         returns = torch.FloatTensor(returns)
         
         if self.continous:
@@ -57,8 +64,19 @@ class REINFORCE(nn.Module):
         else:
             probs = self.main_network(states)
             m = Categorical(probs)
-        loss = -torch.mean(m.log_prob(actions) * returns)
-        
+
+        if self.baseline:
+            baselines = self.value_network(states).squeeze()
+            value_loss = self.value_loss_criterion(returns, baselines)
+
+            self.value_optimizer.zero_grad()
+            value_loss.backward()
+            self.value_optimizer.step()
+
+            loss = -torch.mean(m.log_prob(actions) * (returns - baselines.detach()))
+        else:
+            loss = -torch.mean(m.log_prob(actions) * returns)
+
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
