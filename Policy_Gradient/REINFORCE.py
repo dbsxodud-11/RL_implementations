@@ -10,7 +10,7 @@ import wandb
 wandb.init('Pendulum')
 
 from misc import update_model
-from building_blocks import MLP, MLP_Continuous, MLP_Discrete
+from building_blocks import MLP, Actor_Continuous, Actor_Discrete
 
 
 class REINFORCE(nn.Module):
@@ -28,9 +28,9 @@ class REINFORCE(nn.Module):
         self.gamma = gamma
         
         if continuous:
-            self.main_network = MLP_Continuous(state_dim, action_dim)
+            self.main_network = Actor_Continuous(state_dim, action_dim)
         else:
-            self.main_network = MLP_Discrete(state_dim, action_dim)
+            self.main_network = Actor_Discrete(state_dim, action_dim)
         self.optimizer = optim.Adam(self.main_network.parameters(), lr=self.lr)
 
         if baseline:
@@ -83,9 +83,3 @@ class REINFORCE(nn.Module):
         
     def write(self, reward):
         wandb.log({"Reward": reward})
-
-        
-        
-        
-        
-        

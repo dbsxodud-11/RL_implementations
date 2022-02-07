@@ -23,9 +23,9 @@ class MLP(nn.Module):
         return x
 
 
-class MLP_Discrete(nn.Module):
+class Actor_Discrete(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP_Discrete, self).__init__()
+        super(Actor_Discrete, self).__init__()
 
         self.layers = nn.Sequential(nn.Linear(input_dim, 64),
                                     nn.ReLU(),
@@ -37,9 +37,9 @@ class MLP_Discrete(nn.Module):
         return out
     
 
-class MLP_Continuous(nn.Module):
+class Actor_Continuous(nn.Module):
     def __init__(self, input_dim, output_dim):
-        super(MLP_Continuous, self).__init__()
+        super(Actor_Continuous, self).__init__()
         
         self.layers = nn.Sequential(nn.Linear(input_dim, 64),
                                     nn.ReLU())
@@ -52,3 +52,17 @@ class MLP_Continuous(nn.Module):
         mu = torch.tanh(self.mu_head(out))
         sigma = F.softplus(self.sigma_head(out))
         return mu, sigma
+
+
+class Critic(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(Critic, self).__init__()
+
+        self.layers = nn.Sequential(nn.Linear(state_dim + action_dim, 64),
+                                    nn.ReLU(),
+                                    nn.Linear(64, 1),
+                                    nn.ReLU())
+    
+    def forward(self, state, action):
+        x = torch.cat([state, action], dim=-1)
+        return self.layers(x)
