@@ -62,6 +62,14 @@ python main.py --agent=[AGENT_NAME] --env=[ENV_NAME]
     1. REINFORCE(Monte-Carlo Policy Gradient)
 
         - Estimate Policy Gradient by using Monte-Carlo Methods
+
+    2. REIFORCE with Baseline
+
+        - Since REINFORCE algorihm uses Monte-Carlo estimation, it has high variance. To mitigate this issue, we typically subtract a state-dependent baseline(e.x value function) to reduce variance
+
+    3. Actor-Critic
+
+        - Actor-Critic method uses Critic to assist the policy update
         
 - Available Environments
 
