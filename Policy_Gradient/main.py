@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from REINFORCE import REINFORCE
 from Actor_Critic import ActorCritic
+from GAE import GAE
 
 parser = argparse.ArgumentParser(description='Train Policy Gradient Agent in Cartpole Environment')
 parser.add_argument('--agent', required=True, default='REINFORCE', help='Choose your RL Agent')
@@ -37,6 +38,8 @@ elif args.agent == "REINFORCE with baseline":
     agent = REINFORCE(state_dim, action_dim, continuous, action_min, action_max, baseline=True)
 elif args.agent == "Actor-Critic":
     agent = ActorCritic(state_dim, action_dim, continuous, action_min, action_max)
+elif args.agent == "GAE":
+    agent = GAE(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99)
 
 for episode in tqdm(range(num_episodes)):
     episode_reward = 0
@@ -47,7 +50,7 @@ for episode in tqdm(range(num_episodes)):
     state = env.reset()
     done = False
     while not done:
-        if isinstance(agent, REINFORCE):
+        if isinstance(agent, REINFORCE) or isinstance(agent, GAE):
             action = agent.select_action(state)
         else:
             action, action_prob = agent.select_action(state)
@@ -64,7 +67,7 @@ for episode in tqdm(range(num_episodes)):
         state = next_state
 
         if done:
-            if isinstance(agent, REINFORCE):
+            if isinstance(agent, REINFORCE) or isinstance(agent, GAE):
                 agent.train(state_list, action_list, reward_list)
             agent.write(episode_reward)
             break
