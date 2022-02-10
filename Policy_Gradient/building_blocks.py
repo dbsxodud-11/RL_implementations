@@ -42,16 +42,12 @@ class Actor_Continuous(nn.Module):
         super(Actor_Continuous, self).__init__()
         
         self.layers = nn.Sequential(nn.Linear(input_dim, 64),
-                                    nn.ReLU())
-        
-        self.mu_head = nn.Linear(64, output_dim)
-        self.sigma_head = nn.Linear(64, output_dim)
+                                    nn.ReLU(),
+                                    nn.Linear(64, output_dim))
         
     def forward(self, x):
         out = self.layers(x)
-        mu = torch.tanh(self.mu_head(out))
-        sigma = F.softplus(self.sigma_head(out))
-        return mu, sigma
+        return out
 
 
 class Critic(nn.Module):
@@ -60,8 +56,7 @@ class Critic(nn.Module):
 
         self.layers = nn.Sequential(nn.Linear(state_dim + action_dim, 64),
                                     nn.ReLU(),
-                                    nn.Linear(64, 1),
-                                    nn.ReLU())
+                                    nn.Linear(64, 1))
     
     def forward(self, state, action):
         x = torch.cat([state, action], dim=-1)
