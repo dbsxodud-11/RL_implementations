@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical, Normal
-import wandb
-wandb.init('PPO')
 
 from misc import update_model
 from building_blocks import Actor_Continuous, Actor_Discrete, MLP
@@ -44,7 +42,7 @@ class PPO(nn.Module):
         self.eps = eps
 
         self.step = 0
-        self.train_step = 20
+        self.train_step = 1
 
         self.states_list = []
         self.actions_list = []
@@ -72,7 +70,6 @@ class PPO(nn.Module):
         actions = torch.FloatTensor(actions)
         returns = [np.sum(rewards[i:] * (self.gamma ** np.arange(len(rewards) - i))) for i in range(len(rewards))]
         returns = torch.FloatTensor(returns).reshape(-1, 1)
-        returns = (returns - returns.mean()) / returns.std()
 
         if self.continuous:
             mu = self.actor(states)
@@ -133,6 +130,3 @@ class PPO(nn.Module):
                 self.sigma = self.sigma_min
             else:
                 self.sigma *= self.sigma_decay
-        
-    def write(self, reward):
-        wandb.log({"Reward": reward, "Sigma": self.sigma})

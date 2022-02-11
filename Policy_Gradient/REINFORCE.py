@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical, Normal
-import wandb
-wandb.init('Pendulum')
 
 from misc import update_model
 from building_blocks import MLP, Actor_Continuous, Actor_Discrete

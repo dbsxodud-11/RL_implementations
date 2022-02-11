@@ -1,6 +1,7 @@
 import argparse
 
 import gym
+import wandb
 import numpy as np
 from tqdm import tqdm
 
@@ -8,6 +9,7 @@ from REINFORCE import REINFORCE
 from Actor_Critic import ActorCritic
 from GAE import GAE
 from PPO import PPO
+
 
 parser = argparse.ArgumentParser(description='Train Policy Gradient Agent in Cartpole Environment')
 parser.add_argument('--agent', required=True, default='REINFORCE', help='Choose your RL Agent')
@@ -44,6 +46,9 @@ elif args.agent == "GAE":
 elif args.agent == "PPO":
     agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99, eps=0.2)
 
+
+wandb.init(project=f"Policy Gradient Algorithms - {args.env}", name=args.agent)
+
 for episode in tqdm(range(num_episodes)):
     episode_reward = 0
     state_list = []
@@ -72,5 +77,5 @@ for episode in tqdm(range(num_episodes)):
         if done:
             if isinstance(agent, (REINFORCE, GAE, PPO)):
                 agent.train(state_list, action_list, reward_list)
-            agent.write(episode_reward)
+            wandb.log({"Reward": episode_reward})
             break
