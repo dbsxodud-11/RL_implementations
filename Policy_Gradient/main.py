@@ -1,4 +1,5 @@
 import argparse
+import datetime
 
 import gym
 import wandb
@@ -44,10 +45,12 @@ elif args.agent == "Actor-Critic":
 elif args.agent == "GAE":
     agent = GAE(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99)
 elif args.agent == "PPO":
-    agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99, eps=0.2)
+    agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, eps=0.2)
 
-
-wandb.init(project=f"Policy Gradient Algorithms - {args.env}", name=args.agent)
+time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+wandb.init(project=f"Policy Gradient Algorithms - {args.env}", name=f"{args.agent}: {time}",
+           config={"reward normalization": True, "value loss metric": "MSE Loss", "advantage estimation": "Actor-Critic",
+                   "gamma": 0.99})
 
 for episode in tqdm(range(num_episodes)):
     episode_reward = 0
@@ -58,24 +61,25 @@ for episode in tqdm(range(num_episodes)):
     state = env.reset()
     done = False
     while not done:
-        if isinstance(agent, (REINFORCE, GAE, PPO)):
+        if isinstance(agent, (REINFORCE, GAE)):
             action = agent.select_action(state)
+            next_state, reward, done, _ = env.step([action])
         else:
-            action, action_prob = agent.select_action(state)
-        next_state, reward, done, _ = env.step(action)
+            action, action_log_prob = agent.select_action(state)
+            next_state, reward, done, _ = env.step(action)
 
         state_list.append(state)
         action_list.append(action)
         reward_list.append(reward)
 
-        if isinstance(agent, ActorCritic):
-            agent.train(state, action, action_prob, reward, next_state)
+        if isinstance(agent, (ActorCritic, PPO)):
+            agent.train(state, action, action_log_prob, reward, next_state)
 
         episode_reward += reward
         state = next_state
 
         if done:
-            if isinstance(agent, (REINFORCE, GAE, PPO)):
+            if isinstance(agent, (REINFORCE, GAE)):
                 agent.train(state_list, action_list, reward_list)
             wandb.log({"Reward": episode_reward})
             break
