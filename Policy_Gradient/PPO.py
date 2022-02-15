@@ -65,8 +65,8 @@ class PPO(nn.Module):
         self.state_list.append(state)
         self.action_list.append(action)
         self.action_log_prob_list.append(action_log_prob)
-        self.reward_list.append((reward + 8) / 8)
-        # self.reward_list.append(reward)
+        # self.reward_list.append((reward + 8) / 8)
+        self.reward_list.append(reward)
         self.next_state_list.append(next_state)
 
         self.step += 1
@@ -83,14 +83,15 @@ class PPO(nn.Module):
 
             rewards = np.array(self.reward_list)
             rewards = torch.FloatTensor(rewards).reshape(-1, 1)
-            rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-8)
+            # rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-8)
 
             next_states = np.stack(self.next_state_list)
             next_states = torch.FloatTensor(next_states)
 
             advantage_values = rewards + self.gamma * self.critic(next_states) - self.critic(states)
+            # advantage_values = (advantage_values - advantage_values.mean()) / (advantage_values.std() + 1e-5)
 
-            for _ in range(10):
+            for _ in range(3):
                for idx in BatchSampler(
                     SubsetRandomSampler(range(100)), 32, False):
                     if self.continuous:
@@ -99,8 +100,8 @@ class PPO(nn.Module):
                     else:
                         new_prob = self.actor(states[idx])
                         m = Categorical(new_prob)
-                    
-                    action_log_prob = m.log_prob(actions[idx])
+
+                    action_log_prob = m.log_prob(actions[idx].squeeze()).view(-1, 1)
                     ratio = torch.exp(action_log_prob - old_action_log_probs[idx])
 
                     surr1 = ratio * advantage_values[idx].detach()
@@ -109,17 +110,17 @@ class PPO(nn.Module):
 
                     self.actor_optimizer.zero_grad()
                     policy_loss.backward()
-                    nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5)
+                    # nn.utils.clip_grad_norm_(self.actor.parameters(), 0.1)
                     self.actor_optimizer.step()
 
                     value = self.critic(states[idx])
                     target = rewards[idx] + self.gamma * self.critic(next_states[idx]).detach()
-                    # value_loss = F.smooth_l1_loss(value, target)
-                    value_loss = self.critic_criterion(value, target)
+                    value_loss = F.smooth_l1_loss(value, target)
+                    # value_loss = self.critic_criterion(value, target)
 
                     self.critic_optimizer.zero_grad()
                     value_loss.backward()
-                    nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5)
+                    # nn.utils.clip_grad_norm_(self.critic.parameters(), 0.5)
                     self.critic_optimizer.step()
 
             self.state_list = []

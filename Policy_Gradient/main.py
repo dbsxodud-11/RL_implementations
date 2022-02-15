@@ -49,7 +49,7 @@ elif args.agent == "PPO":
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 wandb.init(project=f"Policy Gradient Algorithms - {args.env}", name=f"{args.agent}: {time}",
-           config={"reward normalization": True, "value loss metric": "MSE Loss", "advantage estimation": "Actor-Critic",
+           config={"reward normalization": False, "value loss metric": "MSE Loss", "advantage estimation": "Actor-Critic",
                    "gamma": 0.99})
 
 for episode in tqdm(range(num_episodes)):
