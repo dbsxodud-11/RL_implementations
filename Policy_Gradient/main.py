@@ -10,6 +10,7 @@ from REINFORCE import REINFORCE
 from Actor_Critic import ActorCritic
 from GAE import GAE
 from PPO import PPO
+from SAC import SAC
 
 
 parser = argparse.ArgumentParser(description='Train Policy Gradient Agent in Cartpole Environment')
@@ -26,12 +27,13 @@ if env_name == "Cartpole":
     env = gym.make('CartPole-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
+    
 elif env_name == "Pendulum":
     env = gym.make('Pendulum-v1')
     continuous = True
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-    
+
     action_min = env.action_space.low
     action_max = env.action_space.high
 
@@ -47,39 +49,10 @@ elif args.agent == "GAE":
     agent = GAE(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99)
 elif args.agent == "PPO":
     agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, eps=0.2)
+elif args.agent == "SAC":
+    agent = SAC(state_dim, action_dim, continuous, action_min, action_max, alpha=0.05, gamma=0.99)
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 wandb.init(project=f"Policy Gradient Algorithms - {env}", name=f"{agent}: {time}")
 
-# for episode in tqdm(range(num_episodes)):
-#     episode_reward = 0
-#     state_list = []
-#     action_list = []
-#     reward_list = []
-
-#     state = env.reset()
-#     done = False
-#     while not done:
-#         if isinstance(agent, (REINFORCE, GAE)):
-#             action = agent.select_action(state)
-#             next_state, reward, done, _ = env.step([action])
-#         else:
-#             action, action_log_prob = agent.select_action(state)
-#             next_state, reward, done, _ = env.step(action)
-
-#         state_list.append(state)
-#         action_list.append(action)
-#         reward_list.append(reward)
-
-#         if isinstance(agent, (ActorCritic, PPO)):
-#             agent.train(state, action, action_log_prob, reward, next_state)
-
-#         episode_reward += reward
-#         state = next_state
-
-#         if done:
-#             if isinstance(agent, (REINFORCE, GAE)):
-#                 agent.train(state_list, action_list, reward_list)
-#             wandb.log({"Reward": episode_reward})
-#             break
 agent.train(env, num_episodes)

@@ -70,6 +70,18 @@ python main.py --agent=[AGENT_NAME] --env=[ENV_NAME]
     3. Actor-Critic
 
         - Actor-Critic method uses Critic to assist the policy update
+
+    4. Generalized Advantage Estimation(GAE)
+
+        - GAE reduces the varaince of policy gradient estimates at the cost of some bias, with an exponentially-weighted estimator of advantage function
+
+    5. Proximal Policy Optimization(PPO)
+
+        - PPO maximizes a clipped surrogate objective which is simpler to implement than TRPO algorithm
+
+    6. Soft Actor-Critic(SAC)
+
+        - SAC is an off-policy actor-critic deep RL algorithm based on the maximum entropy reinforcement learning framework
         
 - Available Environments
 
