@@ -21,11 +21,12 @@ continuous = False
 action_min = None
 action_max = None
 
-if args.env == "Cartpole":
+env_name = args.env
+if env_name == "Cartpole":
     env = gym.make('CartPole-v0')
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
-elif args.env == "Pendulum":
+elif env_name == "Pendulum":
     env = gym.make('Pendulum-v1')
     continuous = True
     state_dim = env.observation_space.shape[0]
@@ -48,38 +49,37 @@ elif args.agent == "PPO":
     agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, eps=0.2)
 
 time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-wandb.init(project=f"Policy Gradient Algorithms - {args.env}", name=f"{args.agent}: {time}",
-           config={"reward normalization": False, "value loss metric": "MSE Loss", "advantage estimation": "Actor-Critic",
-                   "gamma": 0.99})
+wandb.init(project=f"Policy Gradient Algorithms - {env}", name=f"{agent}: {time}")
 
-for episode in tqdm(range(num_episodes)):
-    episode_reward = 0
-    state_list = []
-    action_list = []
-    reward_list = []
+# for episode in tqdm(range(num_episodes)):
+#     episode_reward = 0
+#     state_list = []
+#     action_list = []
+#     reward_list = []
 
-    state = env.reset()
-    done = False
-    while not done:
-        if isinstance(agent, (REINFORCE, GAE)):
-            action = agent.select_action(state)
-            next_state, reward, done, _ = env.step([action])
-        else:
-            action, action_log_prob = agent.select_action(state)
-            next_state, reward, done, _ = env.step(action)
+#     state = env.reset()
+#     done = False
+#     while not done:
+#         if isinstance(agent, (REINFORCE, GAE)):
+#             action = agent.select_action(state)
+#             next_state, reward, done, _ = env.step([action])
+#         else:
+#             action, action_log_prob = agent.select_action(state)
+#             next_state, reward, done, _ = env.step(action)
 
-        state_list.append(state)
-        action_list.append(action)
-        reward_list.append(reward)
+#         state_list.append(state)
+#         action_list.append(action)
+#         reward_list.append(reward)
 
-        if isinstance(agent, (ActorCritic, PPO)):
-            agent.train(state, action, action_log_prob, reward, next_state)
+#         if isinstance(agent, (ActorCritic, PPO)):
+#             agent.train(state, action, action_log_prob, reward, next_state)
 
-        episode_reward += reward
-        state = next_state
+#         episode_reward += reward
+#         state = next_state
 
-        if done:
-            if isinstance(agent, (REINFORCE, GAE)):
-                agent.train(state_list, action_list, reward_list)
-            wandb.log({"Reward": episode_reward})
-            break
+#         if done:
+#             if isinstance(agent, (REINFORCE, GAE)):
+#                 agent.train(state_list, action_list, reward_list)
+#             wandb.log({"Reward": episode_reward})
+#             break
+agent.train(env, num_episodes)

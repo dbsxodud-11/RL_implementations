@@ -2,10 +2,12 @@
 import random
 
 import numpy as np
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.distributions import Categorical, Normal
+import wandb
 
 from misc import update_model
 from building_blocks import Actor_Continuous, Actor_Discrete, MLP
@@ -37,26 +39,21 @@ class GAE(nn.Module):
         self.gamma = gamma
         self.trade_off = trade_off
 
-        self.step = 0
-        self.train_step = 20
-        self.log_probs_list = []
-        self.returns_list = []
-        self.values_list = []
-        self.advantages_list = []
-
     def select_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0)
         if self.continuous:
-            mu = self.actor(state)
-            m = Normal(mu * self.action_max[0], self.sigma)
-            action = m.sample().detach().numpy()[0]
+            mu, sigma = self.actor(state)
+            m = Normal(mu * self.action_max[0], sigma)
+            action = m.sample()
+            action_log_prob = m.log_prob(action)
         else:
             prob = self.actor(state)
             m = Categorical(prob)
-            action = m.sample().item()
-        return action
+            action = m.sample()
+            action_log_prob = m.log_prob(action)
+        return action.item(), action_log_prob.item()
 
-    def train(self, states, actions, rewards):
+    def update_policy(self, states, actions, rewards):
         states = np.stack(states)
         states = torch.FloatTensor(states)
         actions = np.array(actions)
@@ -81,32 +78,42 @@ class GAE(nn.Module):
             advantage_value = td_error + advantage_value * self.gamma * self.trade_off
             advantage_values.insert(0, advantage_value)
         advantage_values = torch.FloatTensor(advantage_values)
-
-        self.log_probs_list.append(m.log_prob(actions))
-        self.returns_list.append(returns)
-        self.values_list.append(values)
-        self.advantages_list.append(advantage_values)
         
-        self.step += 1
-        if self.step % self.train_step == 0:
-            policy_loss = 0.0
-            value_loss = 0.0
-            for log_probs, returns, values, advantages in zip(self.log_probs_list, self.returns_list, self.values_list, self.advantages_list):
-                policy_loss = -(log_probs * advantages).mean()
-                value_loss = self.critic_criterion(values, returns)
-                
-                self.actor_optimizer.zero_grad()
-                policy_loss.backward()
-                self.actor_optimizer.step()
-
-                self.critic_optimizer.zero_grad()
-                value_loss.backward()
-                self.critic_optimizer.step()
-
-            self.log_probs_list = []
-            self.returns_list = []
-            self.values_list = []
-            self.advantages_list = []
+        policy_loss = -(m.log_prob(actions) * advantage_values).mean()
+        value_loss = self.critic_criterion(values, returns)
         
-    def write(self, reward):
-        wandb.log({"Reward": reward})
+        self.actor_optimizer.zero_grad()
+        policy_loss.backward()
+        self.actor_optimizer.step()
+
+        self.critic_optimizer.zero_grad()
+        value_loss.backward()
+        self.critic_optimizer.step()
+
+    def train(self, env, num_episodes):
+        for _ in tqdm(range(num_episodes)):
+            episode_reward = 0
+            state_list = []
+            action_list = []
+            reward_list = []
+
+            state = env.reset()
+            done = False
+            while not done:
+                action, _ = self.select_action(state)
+                next_state, reward, done, _ = env.step(action)
+
+                state_list.append(state)
+                action_list.append(action)
+                reward_list.append(reward)
+
+                episode_reward += reward
+                state = next_state
+
+                if done:
+                    self.update_policy(state_list, action_list, reward_list)
+                    wandb.log({"Reward": episode_reward})
+                    break
+        
+    def __str__(self):
+        return "GAE"
