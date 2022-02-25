@@ -67,9 +67,9 @@ python main.py --agent=[AGENT_NAME] --env=[ENV_NAME]
 
         - Since REINFORCE algorihm uses Monte-Carlo estimation, it has high variance. To mitigate this issue, we typically subtract a state-dependent baseline(e.x value function) to reduce variance
 
-    3. Actor-Critic
+    3. Advantage Actor-Critic(A2C)
 
-        - Actor-Critic method uses Critic to assist the policy update
+        - Actor-Critic method uses Critic to assist the policy update. A2C algorithm calculates advantage value using critic, which measures whether or not the action is better or worse than policy's default behaviour. It allows us to reduce variance substantially at the cost of introducing bias
 
     4. Generalized Advantage Estimation(GAE)
 
