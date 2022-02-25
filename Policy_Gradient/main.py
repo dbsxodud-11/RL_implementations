@@ -1,5 +1,6 @@
 import argparse
 import datetime
+from distutils.command.config import config
 
 import gym
 import wandb
@@ -7,7 +8,7 @@ import numpy as np
 from tqdm import tqdm
 
 from REINFORCE import REINFORCE
-from Actor_Critic import ActorCritic
+from A2C import A2C
 from GAE import GAE
 from PPO import PPO
 from SAC import SAC
@@ -39,20 +40,22 @@ elif env_name == "Pendulum":
 
 num_episodes = 1000
 
-if args.agent == "REINFORCE":
-    agent = REINFORCE(state_dim, action_dim, continuous, action_min, action_max)
-elif args.agent == "REINFORCE with baseline":
-    agent = REINFORCE(state_dim, action_dim, continuous, action_min, action_max, baseline=True)
-elif args.agent == "Actor-Critic":
-    agent = ActorCritic(state_dim, action_dim, continuous, action_min, action_max)
-elif args.agent == "GAE":
-    agent = GAE(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99)
-elif args.agent == "PPO":
-    agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, eps=0.2)
-elif args.agent == "SAC":
-    agent = SAC(state_dim, action_dim, continuous, action_min, action_max, alpha=0.05, gamma=0.99)
+for _ in range(3):
+    if args.agent == "REINFORCE":
+        agent = REINFORCE(state_dim, action_dim, continuous, action_min, action_max)
+    elif args.agent == "REINFORCE with baseline":
+        agent = REINFORCE(state_dim, action_dim, continuous, action_min, action_max, baseline=True)
+    elif args.agent == "A2C":
+        agent = A2C(state_dim, action_dim, continuous, action_min, action_max)
+    elif args.agent == "GAE":
+        agent = GAE(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, trade_off=0.99)
+    elif args.agent == "PPO":
+        agent = PPO(state_dim, action_dim, continuous, action_min, action_max, gamma=0.99, eps=0.2)
+    elif args.agent == "SAC":
+        agent = SAC(state_dim, action_dim, continuous, action_min, action_max, alpha=0.05, gamma=0.99)
 
-time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-wandb.init(project=f"Policy Gradient Algorithms - {env}", name=f"{agent}: {time}")
+    time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    wandb.init(project=f"Policy Gradient Algorithms - {env}", name=f"{agent}: {time}", config={'algorithm': agent})
 
-agent.train(env, num_episodes)
+    agent.train(env, num_episodes)
+    wandb.finish()

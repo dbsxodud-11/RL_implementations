@@ -48,6 +48,8 @@ class SAC(nn.Module):
         self.tau = tau
 
         self.memory = ReplayMemory(capacity=5000)
+        self.step = 1
+        self.train_step = 1
 
     def select_action(self, state):
         state = torch.from_numpy(state).float().unsqueeze(0)
@@ -68,7 +70,7 @@ class SAC(nn.Module):
         self.memory.push(transition)
 
     def update_start(self):
-        return len(self.memory) >= self.batch_size
+        return len(self.memory) >= self.batch_size and self.step % self.train_step == 0
 
     def update(self):
         
@@ -138,6 +140,7 @@ class SAC(nn.Module):
 
                 episode_reward += reward
                 state = next_state
+                self.step += 1
 
                 if done:
                     wandb.log({"Reward": episode_reward}, step=episode,  commit=False)

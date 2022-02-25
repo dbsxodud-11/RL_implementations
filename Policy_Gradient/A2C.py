@@ -13,9 +13,9 @@ from misc import update_model
 from building_blocks import Actor_Continuous, Actor_Discrete, MLP
 
 
-class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, continuous=False, action_min=None, action_max=None, actor_lr=1e-3, critic_lr=1e-3, gamma=0.99):
-        super(ActorCritic, self).__init__()
+class A2C(nn.Module):
+    def __init__(self, state_dim, action_dim, continuous=False, action_min=None, action_max=None, actor_lr=1e-3, critic_lr=5e-4, gamma=0.99):
+        super(A2C, self).__init__()
         
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -32,8 +32,9 @@ class ActorCritic(nn.Module):
         self.actor_optimizer = optim.Adam(self.actor_network.parameters(), lr=actor_lr)
 
         self.critic_network = MLP(state_dim, 1)
-        self.critic_loss_criterion = nn.MSELoss()
         self.critic_optimizer = optim.Adam(self.critic_network.parameters(), lr=critic_lr)
+        
+        self.mse_loss = nn.MSELoss()
 
         self.buffer = []
     
@@ -68,7 +69,7 @@ class ActorCritic(nn.Module):
         pred_state_values = self.critic_network(states)
         target_state_values = rewards + self.gamma * self.critic_network(next_states) * (1 - dones)
 
-        critic_loss = self.critic_loss_criterion(pred_state_values, target_state_values)
+        critic_loss = self.mse_loss(pred_state_values, target_state_values)
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
@@ -80,7 +81,9 @@ class ActorCritic(nn.Module):
             probs = self.actor_network(states)
             m = Categorical(probs)
 
-        actor_loss = -(m.log_prob(actions).view(-1, 1) * (target_state_values - pred_state_values).detach()).sum()
+        advantages = target_state_values - pred_state_values
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        actor_loss = -(m.log_prob(actions).view(-1, 1) * advantages.detach() + 0.05 * m.entropy().view(-1, 1)).mean()
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
@@ -106,4 +109,4 @@ class ActorCritic(nn.Module):
                     break
 
     def __str__(self):
-        return "Actor-Critic"
+        return "A2C"
